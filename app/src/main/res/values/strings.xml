@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Journalmatic</string>
+    <string name="action_settings">Settings</string>
+    <string name="create_sample_data">Create sample data</string>
+    <string name="delete_all_entry">Delete all entries</string>
+    <string name="all_deleted">"All entries deleted"</string>
+    <string name="are_you_sure">Are you sure?</string>
+    <string name="title_activity_editor">EditorActivity</string>
+    <string name="new_entry">New entry</string>
+    <string name="entry_updated">Entry updated</string>
+    <string name="action_delete">Delete</string>
+    <string name="entry_deleted">Entry deleted</string>
+</resources>
