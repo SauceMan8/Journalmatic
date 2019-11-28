@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        getLoaderManager().initLoader(0, null, (LoaderManager.LoaderCallbacks<Object>) this);
+//        getLoaderManager().initLoader(0, null, this);
 
 
     }
@@ -114,6 +114,18 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        }
+        switch (id) {
+            case R.id.action_create_sample:
+                insertSampleData();
+                break;
+
+            case R.id.action_delete_all:
+                deleteAllNotes();
+                break;
+
+            case R.id.action_settings:
+                Toast.makeText(this, "Open Settings...", Toast.LENGTH_SHORT).show();
         }
 
         return super.onOptionsItemSelected(item);

@@ -32,7 +32,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
                     ENTRY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     ENTRY_TEXT + " TEXT, " +
                     ENTRY_CREATED + " TEXT default CURRENT_TIMESTAMP" +
-                    ")";
+                    ");";
 
     public DBOpenHelper(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
