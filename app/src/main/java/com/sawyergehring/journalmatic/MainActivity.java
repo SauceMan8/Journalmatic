@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         cursorAdapter = new JournalCursorAdapter(this,
                 null, 0);
 
-        ListView list = findViewById(android.R.id.list);
+        ListView list = findViewById(R.id.JournalList);
         list.setAdapter(cursorAdapter);
 
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
