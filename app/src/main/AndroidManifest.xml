@@ -25,10 +25,10 @@
             </intent-filter>
         </activity>
 
-        <provider
-            android:name=".JournalProvider"
-            android:authorities="com.sawyergehring.journalmatic.journalprovider"
-            android:exported="false" />
+<!--        <provider-->
+<!--            android:name=".JournalProvider"-->
+<!--            android:authorities="com.sawyergehring.journalmatic.journalprovider"-->
+<!--            android:exported="false" />-->
     </application>
 
 </manifest>

@@ -1,25 +1,16 @@
 package com.sawyergehring.journalmatic;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
 import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-/*************************************************
- * Title: NoteTakingApp
- * Author: MilindAmrutkar
- * Date: 08-11-2017
- * Availability: https://github.com/MilindAmrutkar/NoteTakingApp
- *************************************************/
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 public class EditorActivity extends AppCompatActivity {
 
@@ -27,6 +18,7 @@ public class EditorActivity extends AppCompatActivity {
     private EditText editor;
     private String noteFilter;
     private String oldText;
+    private SQLiteDatabase mDatabase;
 
 
     @Override
@@ -36,39 +28,18 @@ public class EditorActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        DBOpenHelper dbHelper = new DBOpenHelper(this);
+        mDatabase = dbHelper.getWritableDatabase();
+
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         editor = findViewById(R.id.editText2);
 
-        Intent intent = getIntent();
-        Uri uri = intent.getParcelableExtra(JournalProvider.CONTENT_ITEM_TYPE);
-
-        if(uri == null) {
-            action = Intent.ACTION_INSERT;
-            setTitle(getString(R.string.new_entry));
-        } else {
-            action = Intent.ACTION_EDIT;
-            noteFilter = DBOpenHelper.ENTRY_ID + "=" + uri.getLastPathSegment();
-
-            Cursor cursor = getContentResolver().query(uri,
-                    DBOpenHelper.ALL_COLUMNS,
-                    noteFilter,
-                    null,
-                    null);
-
-            cursor.moveToFirst();
-            oldText = cursor.getString(cursor.getColumnIndex(DBOpenHelper.ENTRY_TEXT));
-
-            editor.setText(oldText);
-            editor.requestFocus();
-        }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        if(action.equals(Intent.ACTION_EDIT)) {
-            getMenuInflater().inflate(R.menu.menu_editor, menu);
-        }
+        getMenuInflater().inflate(R.menu.menu_editor, menu);
         return true;
     }
 
@@ -87,51 +58,50 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void deleteEntry() {
-        getContentResolver().delete(JournalProvider.CONTENT_URI,
-                noteFilter, null);
-        Toast.makeText(this, R.string.entry_deleted, Toast.LENGTH_SHORT).show();
-        setResult(RESULT_OK);
-        finish();
+        Toast.makeText(this, R.string.all_deleted, Toast.LENGTH_SHORT).show();
     }
 
     private void finishEditing() {
         String newText = editor.getText().toString().trim();
-
-        switch (action) {
-            case Intent.ACTION_INSERT:
-                if(newText.length() == 0) {
-                    setResult(RESULT_CANCELED);
-                } else {
-                    insertEntry(newText);
-                }
-                break;
-            case Intent.ACTION_EDIT:
-                if(newText.length() == 0) {
-                    deleteEntry();
-                } else if(oldText.equals(newText)) {
-                    setResult(RESULT_CANCELED);
-                } else {
-                    updateEntry(newText);
-                }
-        }
-
+        addEntry(newText);
+//        switch (action) {
+//            case Intent.ACTION_INSERT:
+//                if(newText.length() == 0) {
+//                    setResult(RESULT_CANCELED);
+//                } else {
+//                    addEntry(newText);
+//                }
+//                break;
+//            case Intent.ACTION_EDIT:
+//                if(newText.length() == 0) {
+//                    deleteEntry();
+//                } else if(oldText.equals(newText)) {
+//                    setResult(RESULT_CANCELED);
+//                } else {
+//                    updateEntry(newText);
+//                }
+//        }
+        Toast.makeText(this, R.string.all_deleted, Toast.LENGTH_SHORT).show();
         finish();
     }
 
     private void updateEntry(String noteText) {
-        ContentValues values = new ContentValues();
-        values.put(DBOpenHelper.ENTRY_TEXT, noteText);
-        getContentResolver().update(JournalProvider.CONTENT_URI, values, noteFilter, null);
-        Toast.makeText(this, R.string.entry_updated, Toast.LENGTH_SHORT).show();
-        setResult(RESULT_OK);
+        addEntry(noteText);
 
     }
 
-    private void insertEntry(String noteText) {
-        ContentValues values = new ContentValues();
-        values.put(DBOpenHelper.ENTRY_TEXT, noteText);
-        getContentResolver().insert(JournalProvider.CONTENT_URI, values);
-        setResult(RESULT_OK);
+
+    private void addEntry(String content) {
+        if (content.trim().length() == 0) {
+            return;
+        }
+
+        ContentValues cv = new ContentValues();
+        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
+
+        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
+
+        return;
     }
 
     @Override

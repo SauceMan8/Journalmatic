@@ -11,7 +11,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
     //Constraints
     private static final String DATABASE_NAME = "journal.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     public DBOpenHelper(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);

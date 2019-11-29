@@ -2,6 +2,7 @@ package com.sawyergehring.journalmatic;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -9,10 +10,19 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class JournalAdapter extends RecyclerView.Adapter {
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+import static java.text.DateFormat.getDateInstance;
+
+public class JournalAdapter extends RecyclerView.Adapter<JournalAdapter.JournalViewHolder> {
 
     private Context mContext;
     private Cursor mCursor;
+    private DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
 
 
 
@@ -22,12 +32,14 @@ public class JournalAdapter extends RecyclerView.Adapter {
     }
 
     public class JournalViewHolder extends RecyclerView.ViewHolder {
-        public TextView content;
+        public TextView timestampText;
+        public TextView contentText;
 
         public JournalViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            content = itemView.findViewById(R.id.editText2);
+            contentText = itemView.findViewById(R.id.entry_list_item_text);
+            timestampText = itemView.findViewById(R.id.entry_list_date_text);
 
         }
     }
@@ -35,17 +47,54 @@ public class JournalAdapter extends RecyclerView.Adapter {
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return null;
+    public JournalViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(mContext);
+        View view = inflater.inflate(R.layout.entry_item, parent, false);
+        return new JournalViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull JournalViewHolder holder, int position) {
+        if (!mCursor.moveToPosition(position)) {
+            return;
+        }
 
+        String content = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_TEXT));
+        String timestamp = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_TIMESTAMP));
+
+        holder.timestampText.setText(trimDate(timestamp));
+        holder.contentText.setText(content);
+    }
+
+    private String trimDate(String timestamp) {
+        Date myDate = null;
+        DateFormat inputFormatter = new SimpleDateFormat("YYYY-MM-DD HH:MM:SS.SSS", Locale.US);
+        try {
+            myDate = inputFormatter.parse(timestamp);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        if (myDate == null) {
+            return timestamp + " fail";
+        }
+        return df.format(myDate);
     }
 
     @Override
     public int getItemCount() {
-        return 0;
+        return mCursor.getCount();
+    }
+
+    public void swapCursor(Cursor newCursor) {
+        if (mCursor != null) {
+            mCursor.close();
+        }
+
+        mCursor = newCursor;
+
+        if (newCursor != null) {
+            notifyDataSetChanged();
+        }
     }
 }

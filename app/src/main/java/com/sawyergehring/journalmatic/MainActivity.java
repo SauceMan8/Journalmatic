@@ -1,33 +1,21 @@
 package com.sawyergehring.journalmatic;
 
-import android.app.AlertDialog;
-import android.app.LoaderManager;
 import android.content.ContentValues;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.loader.content.CursorLoader;
-import androidx.loader.content.Loader;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.Log;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.AdapterView;
-import android.widget.CursorAdapter;
-import android.widget.ListView;
-import android.widget.Toast;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
-
+    private SQLiteDatabase mDatabase;
+    private JournalAdapter mAdapter;
 
 
     @Override
@@ -35,6 +23,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        DBOpenHelper dbHelper = new DBOpenHelper(this);
+        mDatabase = dbHelper.getWritableDatabase();
+
+        buildRecycleView();
+
+//        insertSampleData();
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -44,10 +38,56 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void buildRecycleView() {
+        RecyclerView recyclerView = findViewById(R.id.entry_list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mAdapter = new JournalAdapter(this, getAllItems());
+        recyclerView.setAdapter(mAdapter);
+    }
+
     public void LaunchEdit() {
         Intent intent = new Intent(this, EditorActivity.class);
         startActivity(intent);
     }
+
+    private void addEntry(String content) {
+        if (content.trim().length() == 0) {
+            return;
+        }
+
+        ContentValues cv = new ContentValues();
+        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
+
+        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
+
+        return;
+    }
+
+    private Cursor getAllItems() {
+        return mDatabase.query(
+                JournalContract.JournalEntry.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                JournalContract.JournalEntry.COLUMN_TIMESTAMP + " DESC"
+        );
+    }
+
+    private void insertSampleData() {
+        addEntry("Simple note");
+        addEntry("Mutli-line\nnote");
+        addEntry("Very long note with a lot of text that exceeds the width of the screen");
+        // reset
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        mAdapter.swapCursor(getAllItems());
+    }
+
 //    private static final String TAG = MainActivity.class.getSimpleName();
 //    private static final int EDITOR_REQUEST_CODE = 1001;
 //    private CursorAdapter cursorAdapter;
