@@ -33,7 +33,7 @@ tools:context=".MainActivity">
         android:layout_marginTop="@dimen/fab_margin"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="20dp"
-        app:srcCompat="@android:drawable/ic_dialog_email" />
+        app:srcCompat="@mipmap/ic_action_add" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/entry_list"
