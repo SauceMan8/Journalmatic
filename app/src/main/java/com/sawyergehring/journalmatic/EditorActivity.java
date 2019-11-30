@@ -12,6 +12,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+
 public class EditorActivity extends AppCompatActivity {
 
     private String action;
@@ -19,6 +24,7 @@ public class EditorActivity extends AppCompatActivity {
     private String noteFilter;
     private String oldText;
     private SQLiteDatabase mDatabase;
+    private String selectedDate;
 
 
     @Override
@@ -27,6 +33,9 @@ public class EditorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_editor);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        Intent intent = getIntent();
+        selectedDate = intent.getStringExtra("selectedDate");
 
         DBOpenHelper dbHelper = new DBOpenHelper(this);
         mDatabase = dbHelper.getWritableDatabase();
@@ -81,7 +90,6 @@ public class EditorActivity extends AppCompatActivity {
 //                    updateEntry(newText);
 //                }
 //        }
-        Toast.makeText(this, R.string.all_deleted, Toast.LENGTH_SHORT).show();
         finish();
     }
 
@@ -98,6 +106,7 @@ public class EditorActivity extends AppCompatActivity {
 
         ContentValues cv = new ContentValues();
         cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
+        cv.put(JournalContract.JournalEntry.COLUMN_DATE, selectedDate);
 
         mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
 

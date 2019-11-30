@@ -11,4 +11,5 @@
     <string name="action_delete">Delete</string>
     <string name="action_save">Save</string>
     <string name="entry_deleted">Entry deleted</string>
+    <string name="today">Today</string>
 </resources>

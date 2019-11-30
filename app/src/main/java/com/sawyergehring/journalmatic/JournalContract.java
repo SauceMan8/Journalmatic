@@ -11,6 +11,7 @@ public class JournalContract {
         public static final String TABLE_NAME = "journal";
         public static final String COLUMN_TEXT = "entryText";
         public static final String COLUMN_TIMESTAMP = "timestamp";
+        public static final String COLUMN_DATE = "datetime";
     }
 
 }

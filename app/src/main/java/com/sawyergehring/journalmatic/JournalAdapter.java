@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -60,23 +61,26 @@ public class JournalAdapter extends RecyclerView.Adapter<JournalAdapter.JournalV
         }
 
         String content = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_TEXT));
-        String timestamp = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_TIMESTAMP));
+        String dateString = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_DATE));
 
-        holder.timestampText.setText(trimDate(timestamp));
+        holder.timestampText.setText(dateString);
         holder.contentText.setText(content);
     }
 
-    private String trimDate(String timestamp) {
+    private String trimDate(String dateString) {
+        if (dateString == null) {
+            return "date missing";
+        }
         Date myDate = null;
-        DateFormat inputFormatter = new SimpleDateFormat("YYYY-MM-DD HH:MM:SS.SSS", Locale.US);
+        DateFormat inputFormatter = new SimpleDateFormat("yyyy/MM/dd HH:MM:SS.SSS", Locale.US);
         try {
-            myDate = inputFormatter.parse(timestamp);
+            myDate = inputFormatter.parse(dateString);
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
         if (myDate == null) {
-            return timestamp + " fail";
+            return "failed to parse Date";
         }
         return df.format(myDate);
     }
