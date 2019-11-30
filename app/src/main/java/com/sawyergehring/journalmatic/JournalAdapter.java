@@ -24,12 +24,14 @@ public class JournalAdapter extends RecyclerView.Adapter<JournalAdapter.JournalV
     private Context mContext;
     private Cursor mCursor;
     private DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
+    private CustomItemClickListener listener;
 
 
 
-    public JournalAdapter(Context context, Cursor cursor) {
+    public JournalAdapter(Context context, Cursor cursor, CustomItemClickListener customListener) {
         mContext = context;
         mCursor = cursor;
+        listener = customListener;
     }
 
     public class JournalViewHolder extends RecyclerView.ViewHolder {
@@ -49,9 +51,16 @@ public class JournalAdapter extends RecyclerView.Adapter<JournalAdapter.JournalV
     @NonNull
     @Override
     public JournalViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(mContext);
-        View view = inflater.inflate(R.layout.entry_item, parent, false);
-        return new JournalViewHolder(view);
+        View mView = LayoutInflater.from(mContext).inflate(R.layout.entry_item, parent, false);
+        final JournalViewHolder mViewHolder = new JournalViewHolder(mView);
+
+        mView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                listener.onItemClick(v, mViewHolder.getAdapterPosition());
+            }
+        });
+        return new JournalViewHolder(mView);
     }
 
     @Override
@@ -62,9 +71,11 @@ public class JournalAdapter extends RecyclerView.Adapter<JournalAdapter.JournalV
 
         String content = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_TEXT));
         String dateString = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_DATE));
+        long id = mCursor.getLong(mCursor.getColumnIndex(JournalContract.JournalEntry._ID));
 
         holder.timestampText.setText(dateString);
         holder.contentText.setText(content);
+        holder.itemView.setTag(id);
     }
 
     private String trimDate(String dateString) {

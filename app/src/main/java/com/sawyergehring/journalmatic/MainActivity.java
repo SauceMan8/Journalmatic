@@ -15,7 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,7 +24,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -57,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                LaunchEdit();
+                LaunchEditNew();
             }
         });
 
@@ -96,12 +95,20 @@ public class MainActivity extends AppCompatActivity {
     private void buildRecycleView() {
         RecyclerView recyclerView = findViewById(R.id.entry_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mAdapter = new JournalAdapter(this, getAllItems());
+        recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(),
+                DividerItemDecoration.VERTICAL));
+        mAdapter = new JournalAdapter(this, getItemsByDate(selectedDate), new CustomItemClickListener() {
+            @Override
+            public void onItemClick(View v, int position) {
+                Toast.makeText(v.getContext(), "onClick: " + v.getTag(), Toast.LENGTH_SHORT).show();
+                // do what ever you want to do with it
+            }
+        });
         recyclerView.setAdapter(mAdapter);
         mAdapter.swapCursor(getItemsByDate(selectedDate));
     }
 
-    public void LaunchEdit() {
+    public void LaunchEditNew() {
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("selectedDate", selectedDate);
         startActivity(intent);
@@ -126,38 +133,32 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+//    private void addEntry(String content, String date) {
+//        if (content.trim().length() == 0) {
+//            return;
+//        }
+//
+//
+//        ContentValues cv = new ContentValues();
+//        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
+//        cv.put(JournalContract.JournalEntry.COLUMN_DATE, date);
+//
+//        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
+//        mAdapter.swapCursor(getItemsByDate(selectedDate));
+//        return;
+//    }
+
     private void addEntry(String content) {
         if (content.trim().length() == 0) {
             return;
         }
 
-        String date = dateTimeFormat.format(Calendar.getInstance().getTime());
-
         ContentValues cv = new ContentValues();
         cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
-        cv.put(JournalContract.JournalEntry.COLUMN_DATE, date);
+        cv.put(JournalContract.JournalEntry.COLUMN_DATE, selectedDate);
 
         mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
         mAdapter.swapCursor(getItemsByDate(selectedDate));
-        return;
-    }
-
-    private void addEntry(String content, String date) {
-        if (content.trim().length() == 0) {
-            return;
-        }
-
-        if (date == null){
-            date = selectedDate;
-        }
-
-        ContentValues cv = new ContentValues();
-        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
-        cv.put(JournalContract.JournalEntry.COLUMN_DATE, date);
-
-        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
-        mAdapter.swapCursor(getItemsByDate(selectedDate));
-        return;
     }
 
     private Cursor getAllItems() {
@@ -177,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         return mDatabase.query(
                 JournalContract.JournalEntry.TABLE_NAME,
                 null,
-                JournalContract.JournalEntry.COLUMN_DATE + " = \"" + selectedDate + "\"",
+                JournalContract.JournalEntry.COLUMN_DATE + " = \"" + date + "\"",
                 null,
                 null,
                 null,
@@ -186,9 +187,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void insertSampleData() {
-        addEntry("Simple note",null);
-        addEntry("Mutli-line\nnote",null);
-        addEntry("Very long note with a lot of text that exceeds the width of the screen",null);
+        addEntry("Simple note");
+        addEntry("Mutli-line\nnote");
+        addEntry("Very long note with a lot of text that exceeds the width of the screen");
         // reset
     }
 
