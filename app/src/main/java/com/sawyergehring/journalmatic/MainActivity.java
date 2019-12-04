@@ -1,6 +1,10 @@
 package com.sawyergehring.journalmatic;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -15,6 +19,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,7 +33,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import static com.sawyergehring.journalmatic.Journalmatic.CHANNEL_1_ID;
+
 public class MainActivity extends AppCompatActivity {
+
+    private NotificationManagerCompat notificationManager;
+
     private SQLiteDatabase mDatabase;
     private JournalAdapter mAdapter;
     private String selectedDate;
@@ -46,8 +57,11 @@ public class MainActivity extends AppCompatActivity {
         DBOpenHelper dbHelper = new DBOpenHelper(this);
         mDatabase = dbHelper.getWritableDatabase();
 
-        selectedDate = dateOutputFormat.format(new Date(System.currentTimeMillis()));
+        selectedDate = getTodayDateAsString();
         buildRecycleView();
+
+
+        notificationManager = NotificationManagerCompat.from(this);
 
 
 
@@ -56,7 +70,15 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                LaunchEditNew();
+                LaunchNew();
+            }
+        });
+
+        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendReminderNotification(v);
+                sendErrorNotification(v);
             }
         });
 
@@ -88,8 +110,12 @@ public class MainActivity extends AppCompatActivity {
     private void setCalendarToday(CalendarView calendarView) {
         calendarView.setDate(System.currentTimeMillis(),true, true);
 
-        selectedDate = dateOutputFormat.format(new Date(System.currentTimeMillis()));
+        selectedDate = getTodayDateAsString();
         mAdapter.swapCursor(getItemsByDate(selectedDate));
+    }
+
+    private String getTodayDateAsString() {
+        return dateOutputFormat.format(new Date(System.currentTimeMillis()));
     }
 
     private void buildRecycleView() {
@@ -100,15 +126,23 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new JournalAdapter(this, getItemsByDate(selectedDate), new CustomItemClickListener() {
             @Override
             public void onItemClick(View v, int position) {
-                Toast.makeText(v.getContext(), "onClick: " + v.getTag(), Toast.LENGTH_SHORT).show();
-                // do what ever you want to do with it
+                LaunchEdit(v.getContext(), v.getTag());
             }
         });
         recyclerView.setAdapter(mAdapter);
         mAdapter.swapCursor(getItemsByDate(selectedDate));
     }
 
-    public void LaunchEditNew() {
+    private void LaunchEdit(Context context, Object tag) {
+        Toast.makeText(context, "onClick: " + tag.toString(), Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(this, EditorActivity.class);
+        intent.putExtra("selectedDate", selectedDate);
+        intent.putExtra("entryId", tag.toString());
+        startActivity(intent);
+    }
+
+    public void LaunchNew() {
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("selectedDate", selectedDate);
         startActivity(intent);
@@ -129,6 +163,11 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_delete_all:
                 Toast.makeText(this, "Delete", Toast.LENGTH_SHORT).show();
                 break;
+            case R.id.action_settings:
+                startActivity(new Intent(this, SettingsActivity.class));
+                break;
+                default:
+                    return super.onOptionsItemSelected(item);
         }
         return true;
     }
@@ -197,6 +236,35 @@ public class MainActivity extends AppCompatActivity {
     public void onResume(){
         super.onResume();
         mAdapter.swapCursor(getItemsByDate(selectedDate));
+    }
+
+    public void sendReminderNotification(View v) {
+
+        Intent notificationIntent = new Intent(this, EditorActivity.class);
+        notificationIntent.putExtra("selectedDate", getTodayDateAsString());
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_1_ID)
+                .setSmallIcon(R.drawable.ic_main_icon_foreground)
+                .setContentTitle("Journal Reminder")
+                .setContentText("Reminder to write in your journal today!")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .build();
+
+        notificationManager.notify(1, notification);
+    }
+
+    public void sendErrorNotification(View v) {
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_1_ID)
+                .setSmallIcon(R.drawable.ic_main_icon_foreground)
+                .setContentTitle("Error Title")
+                .setContentText("Error Content")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build();
+
+        notificationManager.notify(2, notification);
     }
 
 //    private static final String TAG = MainActivity.class.getSimpleName();

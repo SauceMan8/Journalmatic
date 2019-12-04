@@ -12,4 +12,42 @@
     <string name="action_save">Save</string>
     <string name="entry_deleted">Entry deleted</string>
     <string name="today">Today</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Preference Titles -->
+    <string name="messages_header">Messages</string>
+    <string name="sync_header">Sync</string>
+
+    <!-- Messages Preferences -->
+    <string name="signature_title">Your signature</string>
+    <string name="reply_title">Default reply action</string>
+
+    <!-- Sync Preferences -->
+    <string name="sync_title">Sync email periodically</string>
+    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails
+    </string>
+    <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="notificationsFreq">Notification Frequency</string>
+    <string name="darkmode">Dark Mode</string>
+    <string name="notificationFreq_descr">Change how often you get notified to write in your journal.</string>
+    <string name="creationFreq">Automatic Entry Frequency</string>
+    <string name="creationFreq_descr">Change how often an entry is created</string>
+
+    <string name="pref_feq_def_value">daily</string>
+
+    <string-array name="pref_feq_entries">
+        <item>Daily</item>
+        <item>Weekly</item>
+        <item>Monthly</item>
+    </string-array>
+
+    <string-array name="pref_feq_values">
+        <item>daily</item>
+        <item>weekly</item>
+        <item>monthly</item>
+    </string-array>
+    <string name="title_activity_settings2">Settings</string>
+    <string name="notifications">Notifications</string>
+    <string name="autoCreate_settings_title">Auto Generate Journal Entries</string>
 </resources>

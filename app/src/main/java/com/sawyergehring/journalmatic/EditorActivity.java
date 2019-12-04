@@ -1,7 +1,10 @@
 package com.sawyergehring.journalmatic;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,6 +12,7 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
@@ -19,12 +23,12 @@ import java.util.Locale;
 
 public class EditorActivity extends AppCompatActivity {
 
-    private String action;
     private EditText editor;
-    private String noteFilter;
-    private String oldText;
     private SQLiteDatabase mDatabase;
     private String selectedDate;
+    private String entryId;
+    private Cursor mCursor;
+    private Boolean isEdit = false;
 
 
     @Override
@@ -36,6 +40,7 @@ public class EditorActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         selectedDate = intent.getStringExtra("selectedDate");
+        entryId = intent.getStringExtra("entryId");
 
         DBOpenHelper dbHelper = new DBOpenHelper(this);
         mDatabase = dbHelper.getWritableDatabase();
@@ -43,6 +48,16 @@ public class EditorActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         editor = findViewById(R.id.editText2);
+
+        if (entryId != null && entryId.trim().length() != 0)
+        {
+            isEdit = true;
+            mCursor = getItemsById(entryId);
+            if (mCursor.moveToFirst()){
+                String content = mCursor.getString(mCursor.getColumnIndex(JournalContract.JournalEntry.COLUMN_TEXT));
+                editor.setText(content);
+            }
+        }
 
     }
 
@@ -56,7 +71,18 @@ public class EditorActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                finishEditing();
+                onBackPressed();
+                break;
+
+            case R.id.action_save:
+                String newText = editor.getText().toString().trim();
+                if (isEdit) {
+                    updateEntry(newText);
+                }
+                else {
+                    entryId = String.valueOf(addEntry(newText));
+                    isEdit = true;
+                }
                 break;
 
             case R.id.action_delete:
@@ -66,55 +92,92 @@ public class EditorActivity extends AppCompatActivity {
         return true;
     }
 
+    @Override
+    public void onBackPressed() {
+        finishEditing();
+    }
+
     private void deleteEntry() {
-        Toast.makeText(this, R.string.all_deleted, Toast.LENGTH_SHORT).show();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure you want to delete this entry?")
+                .setCancelable(true)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (isEdit)
+                            mDatabase.delete(JournalContract.JournalEntry.TABLE_NAME, "_id=?" , new String[]{entryId});
+
+                        Toast.makeText(EditorActivity.this, "Entry deleted", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
     }
 
     private void finishEditing() {
         String newText = editor.getText().toString().trim();
-        addEntry(newText);
-//        switch (action) {
-//            case Intent.ACTION_INSERT:
-//                if(newText.length() == 0) {
-//                    setResult(RESULT_CANCELED);
-//                } else {
-//                    addEntry(newText);
-//                }
-//                break;
-//            case Intent.ACTION_EDIT:
-//                if(newText.length() == 0) {
-//                    deleteEntry();
-//                } else if(oldText.equals(newText)) {
-//                    setResult(RESULT_CANCELED);
-//                } else {
-//                    updateEntry(newText);
-//                }
-//        }
+        save(newText);
         finish();
     }
 
-    private void updateEntry(String noteText) {
-        addEntry(noteText);
-
+    private long save(String newText) {
+        Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+        if (isEdit) {
+            updateEntry(newText);
+            return -1;
+        }
+        else {
+            return addEntry(newText);
+        }
     }
 
 
-    private void addEntry(String content) {
+    private void updateEntry(String content) {
         if (content.trim().length() == 0) {
             return;
         }
 
         ContentValues cv = new ContentValues();
         cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
-        cv.put(JournalContract.JournalEntry.COLUMN_DATE, selectedDate);
 
-        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
+        mDatabase.update(JournalContract.JournalEntry.TABLE_NAME, cv, "_id=?" , new String[]{entryId});
 
         return;
+
     }
 
-    @Override
-    public void onBackPressed() {
-        finishEditing();
+
+    private long addEntry(String content) {
+        if (content.trim().length() == 0) {
+            return -1;
+        }
+
+        ContentValues cv = new ContentValues();
+        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
+        cv.put(JournalContract.JournalEntry.COLUMN_DATE, selectedDate);
+
+        return mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
+    }
+
+    private Cursor getItemsById(String entryId) {
+
+        return mDatabase.query(
+                JournalContract.JournalEntry.TABLE_NAME,
+                null,
+                JournalContract.JournalEntry._ID + " = " + entryId,
+                null,
+                null,
+                null,
+                null
+        );
     }
 }
