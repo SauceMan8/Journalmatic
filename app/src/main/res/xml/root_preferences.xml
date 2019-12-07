@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="@string/notifications">
         <SwitchPreferenceCompat
@@ -22,14 +23,22 @@
             app:title="@string/notifications"
             app:defaultValue="true"/>
 
+
         <ListPreference
             app:dependency="notify"
             app:defaultValue="@string/pref_feq_def_value"
             app:entries="@array/pref_feq_entries"
             app:entryValues="@array/pref_feq_values"
-            app:key="notification_time"
+            app:key="notification_feq"
             app:summary="@string/notificationFreq_descr"
             app:title="@string/notificationsFreq" />
+
+        <EditTextPreference
+            android:defaultValue="6"
+            android:key="reminder_time"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Set Reminder Hour"/>
 
     </PreferenceCategory>
 

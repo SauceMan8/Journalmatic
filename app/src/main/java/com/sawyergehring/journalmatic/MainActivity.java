@@ -1,7 +1,7 @@
 package com.sawyergehring.journalmatic;
 
+import android.app.AlarmManager;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,10 +31,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-import static com.sawyergehring.journalmatic.Journalmatic.CHANNEL_1_ID;
+import static com.sawyergehring.journalmatic.Journalmatic.Reminder_Channel;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private DateFormat dateTimeFormat = new SimpleDateFormat("yyyy/MM/dd HH:MM:SS.SSS", Locale.US);
     private DateFormat dateInputFormat = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
     private DateFormat dateOutputFormat = DateFormat.getDateInstance(DateFormat.MEDIUM);
+    private AlarmManager am;
+    private PendingIntent pendingIntent;
 
 
     @Override
@@ -64,6 +68,11 @@ public class MainActivity extends AppCompatActivity {
         notificationManager = NotificationManagerCompat.from(this);
 
 
+        am = (AlarmManager) this.getSystemService(ALARM_SERVICE);
+
+
+        //setupNotification();
+
 
 //        insertSampleData();
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -74,13 +83,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendReminderNotification(v);
-                sendErrorNotification(v);
-            }
-        });
 
         final CalendarView calendarView = findViewById(R.id.calendarView);
         calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
@@ -105,6 +107,18 @@ public class MainActivity extends AppCompatActivity {
                 setCalendarToday(calendarView);
             }
         });
+    }
+
+    private void setupNotification() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 50);
+        calendar.set(Calendar.SECOND, 0);
+        Intent intent1 = new Intent(MainActivity.this, NotificationReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0,intent1, PendingIntent.FLAG_UPDATE_CURRENT);
+        if (am != null) {
+            am.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), AlarmManager.INTERVAL_FIFTEEN_MINUTES, pendingIntent);
+        }
     }
 
     private void setCalendarToday(CalendarView calendarView) {
@@ -172,20 +186,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-//    private void addEntry(String content, String date) {
-//        if (content.trim().length() == 0) {
-//            return;
-//        }
-//
-//
-//        ContentValues cv = new ContentValues();
-//        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
-//        cv.put(JournalContract.JournalEntry.COLUMN_DATE, date);
-//
-//        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
-//        mAdapter.swapCursor(getItemsByDate(selectedDate));
-//        return;
-//    }
 
     private void addEntry(String content) {
         if (content.trim().length() == 0) {
@@ -238,34 +238,67 @@ public class MainActivity extends AppCompatActivity {
         mAdapter.swapCursor(getItemsByDate(selectedDate));
     }
 
-    public void sendReminderNotification(View v) {
+//    public void createAlarm() {
+//        Intent intent = new Intent(this, NotificationReceiver.class);
+//
+//        pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+//
+//        am.setInexactRepeating(
+//                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+//                SystemClock.elapsedRealtime() + (5*1000),
+//                (10*1000),
+//                pendingIntent);
+//
+//    }
 
-        Intent notificationIntent = new Intent(this, EditorActivity.class);
-        notificationIntent.putExtra("selectedDate", getTodayDateAsString());
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+//    public void sendReminderNotification() {
+//
+//        Intent notificationIntent = new Intent(this, EditorActivity.class);
+//        notificationIntent.putExtra("selectedDate", getTodayDateAsString());
+//        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+//
+//        Notification notification = new NotificationCompat.Builder(this, Reminder_Channel)
+//                .setSmallIcon(R.drawable.ic_main_icon_foreground)
+//                .setContentTitle("Journal Reminder")
+//                .setContentText("Reminder to write in your journal today!")
+//                .setPriority(NotificationCompat.PRIORITY_LOW)
+//                .setContentIntent(contentIntent)
+//                .setAutoCancel(true)
+//                .build();
+//
+//        notificationManager.notify(1, notification);
+//    }
+//
+//    public void sendErrorNotification(View v) {
+//        Notification notification = new NotificationCompat.Builder(this, Reminder_Channel)
+//                .setSmallIcon(R.drawable.ic_main_icon_foreground)
+//                .setContentTitle("Error Title")
+//                .setContentText("Error Content")
+//                .setPriority(NotificationCompat.PRIORITY_HIGH)
+//                .build();
+//
+//        notificationManager.notify(2, notification);
+//    }
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_1_ID)
-                .setSmallIcon(R.drawable.ic_main_icon_foreground)
-                .setContentTitle("Journal Reminder")
-                .setContentText("Reminder to write in your journal today!")
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setContentIntent(contentIntent)
-                .setAutoCancel(true)
-                .build();
 
-        notificationManager.notify(1, notification);
-    }
+//    private void addEntry(String content, String date) {
+//        if (content.trim().length() == 0) {
+//            return;
+//        }
+//
+//
+//        ContentValues cv = new ContentValues();
+//        cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
+//        cv.put(JournalContract.JournalEntry.COLUMN_DATE, date);
+//
+//        mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
+//        mAdapter.swapCursor(getItemsByDate(selectedDate));
+//        return;
+//    }
 
-    public void sendErrorNotification(View v) {
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_1_ID)
-                .setSmallIcon(R.drawable.ic_main_icon_foreground)
-                .setContentTitle("Error Title")
-                .setContentText("Error Content")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .build();
 
-        notificationManager.notify(2, notification);
-    }
+
+
 
 //    private static final String TAG = MainActivity.class.getSimpleName();
 //    private static final int EDITOR_REQUEST_CODE = 1001;
