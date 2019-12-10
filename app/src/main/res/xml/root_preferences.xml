@@ -34,7 +34,7 @@
             app:title="@string/notificationsFreq" />
 
         <EditTextPreference
-            android:defaultValue="6"
+            android:defaultValue="hello settings!"
             android:key="reminder_time"
             android:selectAllOnFocus="true"
             android:singleLine="true"

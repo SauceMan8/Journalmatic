@@ -14,14 +14,27 @@ import java.util.Date;
 import static com.sawyergehring.journalmatic.Journalmatic.Reminder_Channel;
 
 public class NotificationReceiver extends BroadcastReceiver {
+    public static final int REQUEST_CODE = 12345;
+    public static final String ACTION = "com.sawyergehring.journalmatic.Journalmatic";
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Intent i = new Intent(context, SetupNotificationsService.class);
+        i.putExtra("date", getTodayDateAsString());
+        context.startService(i);
 
 
 //        Toast.makeText(context, "Receive Broadcast", Toast.LENGTH_SHORT).show();
 
 
+        sendNotification(context);
+
+
+        //notification_ID++;
+
+    }
+
+    private void sendNotification(Context context) {
         long when = System.currentTimeMillis();
         NotificationManager notificationManager = (NotificationManager) context
                 .getSystemService(Context.NOTIFICATION_SERVICE);
@@ -43,9 +56,8 @@ public class NotificationReceiver extends BroadcastReceiver {
 
         notificationManager.notify(2, notification.build());
 
-
-        //notification_ID++;
-
+        AutoEntry autoEntry = new AutoEntry(context);
+        autoEntry.generate();
     }
 
     private String getTodayDateAsString() {

@@ -1,32 +1,54 @@
 package com.sawyergehring.journalmatic;
 
+import android.Manifest;
 import android.app.AlarmManager;
-import android.app.Notification;
 import android.app.PendingIntent;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CalendarView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.NotificationCompat;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.sawyergehring.journalmatic.Common.Common;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -35,7 +57,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-import static com.sawyergehring.journalmatic.Journalmatic.Reminder_Channel;
+import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -51,6 +73,13 @@ public class MainActivity extends AppCompatActivity {
     private PendingIntent pendingIntent;
 
 
+    private LocationRequest mLocationRequest;
+
+    private long UPDATE_INTERVAL = 10 * 1000;  /* 10 secs */
+    private long FASTEST_INTERVAL = 2000; /* 2 sec */
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,18 +90,28 @@ public class MainActivity extends AppCompatActivity {
         DBOpenHelper dbHelper = new DBOpenHelper(this);
         mDatabase = dbHelper.getWritableDatabase();
 
+        getPermissionToReadLocation();
+        getPermissionToReadCalendar();
+
         selectedDate = getTodayDateAsString();
         buildRecycleView();
 
+        //getLocation();
+        //startLocationUpdates();
+//        AutoEntry autoEntry = new AutoEntry(this);
+//        autoEntry.generate();
+
+//        Toast.makeText(this, autoEntry.getWeather("43.81", "-111.79", "imperial").getName(), Toast.LENGTH_LONG).show();
+
 
         notificationManager = NotificationManagerCompat.from(this);
-
+//        scheduleAlarm();
 
         am = (AlarmManager) this.getSystemService(ALARM_SERVICE);
 
-
         //setupNotification();
-
+        TextView t = findViewById(R.id.textView);
+        t.setText(Common.defaultPreferences.getString("reminder_time", "broken"));
 
 //        insertSampleData();
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -80,6 +119,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 LaunchNew();
+            }
+        });
+
+        Button button = findViewById(R.id.button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AutoEntry autoEntry = new AutoEntry(MainActivity.this);
+                autoEntry.generate();
             }
         });
 
@@ -94,7 +142,9 @@ public class MainActivity extends AppCompatActivity {
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-                selectedDate = dateOutputFormat.format(date);
+                if (date != null) {
+                    selectedDate = dateOutputFormat.format(date);
+                }
                 mAdapter.swapCursor(getItemsByDate(selectedDate));
                 Toast.makeText(MainActivity.this, selectedDate, Toast.LENGTH_SHORT).show();
             }
@@ -107,7 +157,204 @@ public class MainActivity extends AppCompatActivity {
                 setCalendarToday(calendarView);
             }
         });
+
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        LocationManager locationManager = (LocationManager) getSystemService((Context.LOCATION_SERVICE));
+        final boolean networkLocationEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+        SharedPreferences.Editor editor = Common.defaultPreferences.edit();
+
+        editor.putBoolean("networkLocationEnabled", networkLocationEnabled);
+        editor.apply();
+    }
+
+    // Trigger new location updates at interval
+    protected void startLocationUpdates() {
+
+        // Create the location request to start receiving updates
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_LOW_POWER);
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+
+        // Create LocationSettingsRequest object using location request
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        // Check whether location settings are satisfied
+        // https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        // new Google API SDK v11 uses getFusedLocationProviderClient(this)
+        getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+                    @Override
+                    public void onLocationResult(LocationResult locationResult) {
+                        // do work here
+                        onLocationChanged(locationResult.getLastLocation());
+                        Common.current_location = locationResult.getLastLocation();
+                    }
+                },
+                Looper.myLooper());
+    }
+
+    public void onLocationChanged(Location location) {
+        // New location has now been determined
+        String msg = "Updated Location: " +
+                Double.toString(location.getLatitude()) + "," +
+                Double.toString(location.getLongitude());
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        // You can now create a LatLng Object for use with maps
+//        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+    }
+
+    public void getLastLocation() {
+        // Get last known recent location using new Google Play Services SDK (v11+)
+        FusedLocationProviderClient locationClient = getFusedLocationProviderClient(this);
+
+        locationClient.getLastLocation()
+                .addOnSuccessListener(new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        // GPS location can be null if GPS is switched off
+                        if (location != null) {
+                            onLocationChanged(location);
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("MapDemoActivity", "Error trying to get last GPS location");
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    public void launchTestService() {
+        // Construct our Intent specifying the Service
+        Intent i = new Intent(this, SetupNotificationsService.class);
+        // Add extras to the bundle
+        i.putExtra("foo", "bar");
+        // Start the service
+        startService(i);
+    }
+
+    private void ScheduleJob() {
+        JobScheduler jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+        JobInfo jobInfo = new JobInfo.Builder(11, new ComponentName(this, MyJobService.class))
+                .setPeriodic((1000 * 60 * 60 * 24 * 7), (1000 * 60 * 7))
+                // only add if network access is required
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .build();
+
+        jobScheduler.schedule(jobInfo);
+    }
+
+    public void scheduleAlarm() {
+        // Construct an intent that will execute the AlarmReceiver
+        Intent intent = new Intent(getApplicationContext(), NotificationReceiver.class);
+        // Create a PendingIntent to be triggered when the alarm goes off
+        final PendingIntent pIntent = PendingIntent.getBroadcast(this, NotificationReceiver.REQUEST_CODE,
+                intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        // Setup periodic alarm every every half hour from this point onwards
+        long firstMillis = System.currentTimeMillis(); // alarm is set right away
+        AlarmManager alarm = (AlarmManager) this.getSystemService(ALARM_SERVICE);
+        // First parameter is the type: ELAPSED_REALTIME, ELAPSED_REALTIME_WAKEUP, RTC_WAKEUP
+        // Interval can be INTERVAL_FIFTEEN_MINUTES, INTERVAL_HALF_HOUR, INTERVAL_HOUR, INTERVAL_DAY
+        alarm.setInexactRepeating(AlarmManager.RTC_WAKEUP, firstMillis,
+                AlarmManager.INTERVAL_FIFTEEN_MINUTES, pIntent);
+    }
+
+    public void createAlarm() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(this).getString("reminder_time", "10")));
+        //Toast.makeText(this, "Alarm created2" , Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, NotificationReceiver.class);
+
+        am = (AlarmManager) this.getSystemService(ALARM_SERVICE);
+        pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+
+        am.setInexactRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.getTimeInMillis(),
+                AlarmManager.INTERVAL_DAY,
+                pendingIntent);
+
+    }
+
+    public void getPermissionToReadCalendar() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(
+                    Manifest.permission.READ_CALENDAR)) {
+                Toast.makeText(this,"Location is used for getting weather data", Toast.LENGTH_LONG);
+
+            }
+
+            requestPermissions(new String[]{Manifest.permission.READ_CALENDAR}, Common.GET_CALENDAR_PERMISSIONS_REQUEST);
+        }
+    }
+
+    public void getPermissionToReadLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(
+                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                Toast.makeText(this,"Location is used for getting weather data", Toast.LENGTH_LONG);
+
+            }
+
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, Common.GET_LOCATION_PERMISSIONS_REQUEST);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        // Make sure it's our original READ_CONTACTS request
+        if (requestCode == Common.GET_LOCATION_PERMISSIONS_REQUEST) {
+            if (grantResults.length == 1 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Locations permission granted", Toast.LENGTH_SHORT).show();
+                Common.defaultPreferences.edit().putBoolean("LocationEnabled", true).apply();
+            } else {
+                // showRationale = false if user clicks Never Ask Again, otherwise true
+                boolean showRationale = shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION);
+
+                if (showRationale) {
+                    Common.defaultPreferences.edit().putBoolean("LocationEnabled", false).apply();
+                } else {
+                    Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } else if (requestCode == Common.GET_CALENDAR_PERMISSIONS_REQUEST) {
+            if (grantResults.length == 1 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Calendar permission granted", Toast.LENGTH_SHORT).show();
+                Common.defaultPreferences.edit().putBoolean("CalendarEnabled", true).apply();
+            } else {
+                // showRationale = false if user clicks Never Ask Again, otherwise true
+                boolean showRationale = shouldShowRequestPermissionRationale(Manifest.permission.READ_CALENDAR);
+
+                if (showRationale) {
+                    Common.defaultPreferences.edit().putBoolean("CalendarEnabled", false).apply();
+                } else {
+                    Toast.makeText(this, "Read Calendar permission denied", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
 
     private void setupNotification() {
         Calendar calendar = Calendar.getInstance();
