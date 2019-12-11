@@ -246,6 +246,7 @@ public class AutoEntry {
         ContentValues cv = new ContentValues();
         cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
         cv.put(JournalContract.JournalEntry.COLUMN_DATE, getTodayDateAsString());
+        cv.put(JournalContract.JournalEntry.COLUMN_TIMESTAMP, Common.dateSort);
 
         DBOpenHelper dbHelper = new DBOpenHelper(appContext);
         SQLiteDatabase mDatabase = dbHelper.getWritableDatabase();

@@ -77,13 +77,27 @@ public class Journalmatic extends Application {
         Toast.makeText(this, "Alarm created1" , Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(this, NotificationReceiver.class);
 
+        String length = Common.defaultPreferences.getString("notification_feq", "Daily");
+        Integer multiple = 1;
+        switch (length) {
+            case "daily":
+                break;
+            case "weekly":
+                multiple = 7;
+                break;
+            case "monthly":
+                multiple = 30;
+                break;
+        }
+
+
         am = (AlarmManager) this.getSystemService(ALARM_SERVICE);
         pendingIntent = PendingIntent.getBroadcast(this, NotificationReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         am.setInexactRepeating(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 calendar.getTimeInMillis(),
-                AlarmManager.INTERVAL_DAY,
+                AlarmManager.INTERVAL_DAY * multiple,
                 pendingIntent);
 
     }

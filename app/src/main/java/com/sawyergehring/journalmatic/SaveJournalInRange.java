@@ -23,6 +23,7 @@ import com.sawyergehring.journalmatic.Common.Common;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.Locale;
 
 public class SaveJournalInRange extends AppCompatActivity {
 
@@ -71,23 +72,24 @@ public class SaveJournalInRange extends AppCompatActivity {
                             c = getAllItems();
                         }
                         else {
-                            start_date = date1_year.getText().toString() + "-" + date1_month.getText().toString() + "-" + date1_day.getText().toString();
-                            end_date = date2_year.getText().toString() + "-" + date2_month.getText().toString() + "-" + date2_day.getText().toString();
+                            String month1 = String.format(Locale.US, "%02d", Integer.valueOf(date1_month.getText().toString()));
+                            start_date = date1_year.getText().toString() + "/" + String.format(Locale.US, "%02d", Integer.valueOf(date1_month.getText().toString())) + "/" + String.format(Locale.US, "%02d", Integer.valueOf(date1_day.getText().toString()));
+                            end_date = date2_year.getText().toString() + "/" + String.format(Locale.US, "%02d", Integer.valueOf(date2_month.getText().toString())) + "/" + String.format(Locale.US, "%02d", Integer.valueOf(date2_day.getText().toString()));
                             c = getItemsByDates(start_date,end_date);
                         }
-                        String write = "";
+                        StringBuilder write = new StringBuilder();
 
                         while (c.moveToNext()) {
 
                             String content = c.getString(c.getColumnIndex(JournalContract.JournalEntry.COLUMN_TEXT));
                             String dateString = c.getString(c.getColumnIndex(JournalContract.JournalEntry.COLUMN_DATE));
+                            String date2 = c.getString(c.getColumnIndex(JournalContract.JournalEntry.COLUMN_TIMESTAMP));
 
-                            write += dateString + "\n" + content.replaceAll("(?m)^", "\t") + "\n\n\n";
+                            write.append(dateString).append("\n").append(content.replaceAll("(?m)^", "\t")).append("\n\n\n");
                         }
 
-                        writeFileOnInternalStorage(SaveJournalInRange.this, name.getText().toString()+".txt", write);
+                        writeFileOnInternalStorage(SaveJournalInRange.this, name.getText().toString()+".txt", write.toString());
                         Toast.makeText(SaveJournalInRange.this, "Saved to Downloads folder", Toast.LENGTH_LONG).show();
-                        finish();
                     }
                 });
     }
@@ -135,8 +137,8 @@ public class SaveJournalInRange extends AppCompatActivity {
         return  Common.mDatabase.query(
                 JournalContract.JournalEntry.TABLE_NAME,
                 null,
-                JournalContract.JournalEntry.COLUMN_DATE + " >= \"" + start + "\"" + " AND "
-                        + JournalContract.JournalEntry.COLUMN_DATE + " <= \"" + end + "\"",
+                JournalContract.JournalEntry.COLUMN_TIMESTAMP + " >= \"" + start + "\"" + " AND "
+                        + JournalContract.JournalEntry.COLUMN_TIMESTAMP + " <= \"" + end + "\"",
                 null,
                 null,
                 null,

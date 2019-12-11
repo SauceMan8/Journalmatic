@@ -11,7 +11,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
     //Constraints
     private static final String DATABASE_NAME = "journal.db";
-    private static final int DATABASE_VERSION = 9;
+    private static final int DATABASE_VERSION = 10;
 
     public DBOpenHelper(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -23,7 +23,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
                 JournalEntry.TABLE_NAME + " (" +
                 JournalEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 JournalEntry.COLUMN_TEXT + " TEXT NOT NULL, " +
-                JournalEntry.COLUMN_TIMESTAMP + " TEXT DEFAULT CURRENT_TIMESTAMP," +
+                JournalEntry.COLUMN_TIMESTAMP + " TEXT," +
                 JournalEntry.COLUMN_DATE + " TEXT" +
                 ");";
 

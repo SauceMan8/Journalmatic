@@ -8,6 +8,8 @@ import android.content.Intent;
 
 import androidx.core.app.NotificationCompat;
 
+import com.sawyergehring.journalmatic.Common.Common;
+
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -42,6 +44,7 @@ public class NotificationReceiver extends BroadcastReceiver {
         Intent notificationIntent = new Intent(context, EditorActivity.class);
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         notificationIntent.putExtra("selectedDate", getTodayDateAsString());
+        notificationIntent.putExtra("dateSort", Common.dateSort);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);

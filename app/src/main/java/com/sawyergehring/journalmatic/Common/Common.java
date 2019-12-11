@@ -28,5 +28,6 @@ public class Common {
     public static final int GET_STORAGE_PERMISSIONS_REQUEST = 3;
     public static SharedPreferences defaultPreferences;// Identifier for the permission request
     public static SQLiteDatabase mDatabase;
+    public static String dateSort;
 
 }

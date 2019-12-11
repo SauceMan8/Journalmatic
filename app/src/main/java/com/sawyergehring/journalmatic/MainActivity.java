@@ -20,6 +20,7 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -144,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
                 Date date = null;
                 try {
                     date = dateInputFormat.parse(year + "/" + (month+1) + "/" + dayOfMonth);
+                    Common.dateSort = year + "/" + (month+1) + "/" + dayOfMonth + "-" + System.currentTimeMillis();
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
@@ -384,6 +386,10 @@ public class MainActivity extends AppCompatActivity {
         return dateOutputFormat.format(new Date(System.currentTimeMillis()));
     }
 
+    public String getTodayDateForSort() {
+        return Common.dateSort;
+    }
+
     private void buildRecycleView() {
         RecyclerView recyclerView = findViewById(R.id.entry_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -404,6 +410,7 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("selectedDate", selectedDate);
+        intent.putExtra("dateSort", Common.dateSort);
         intent.putExtra("entryId", tag.toString());
         startActivity(intent);
     }
@@ -411,6 +418,7 @@ public class MainActivity extends AppCompatActivity {
     public void LaunchNew() {
         Intent intent = new Intent(this, EditorActivity.class);
         intent.putExtra("selectedDate", selectedDate);
+        intent.putExtra("dateSort", Common.dateSort);
         startActivity(intent);
     }
 
@@ -450,6 +458,7 @@ public class MainActivity extends AppCompatActivity {
         ContentValues cv = new ContentValues();
         cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
         cv.put(JournalContract.JournalEntry.COLUMN_DATE, selectedDate);
+        cv.put(JournalContract.JournalEntry.COLUMN_TIMESTAMP, Common.dateSort);
 
         mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
         mAdapter.swapCursor(getItemsByDate(selectedDate));
@@ -535,6 +544,7 @@ public class MainActivity extends AppCompatActivity {
 
         Intent notificationIntent = new Intent(this, EditorActivity.class);
         notificationIntent.putExtra("selectedDate", getTodayDateAsString());
+        notificationIntent.putExtra("dateSort", Common.dateSort);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
         Notification notification = new NotificationCompat.Builder(this, Reminder_Channel)

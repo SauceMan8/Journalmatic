@@ -26,6 +26,7 @@ public class EditorActivity extends AppCompatActivity {
     private EditText editor;
     private SQLiteDatabase mDatabase;
     private String selectedDate;
+    private String dateSort;
     private String entryId;
     private Cursor mCursor;
     private Boolean isEdit = false;
@@ -40,6 +41,7 @@ public class EditorActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         selectedDate = intent.getStringExtra("selectedDate");
+        dateSort = intent.getStringExtra("dateSort");
         entryId = intent.getStringExtra("entryId");
 
         DBOpenHelper dbHelper = new DBOpenHelper(this);
@@ -164,6 +166,7 @@ public class EditorActivity extends AppCompatActivity {
         ContentValues cv = new ContentValues();
         cv.put(JournalContract.JournalEntry.COLUMN_TEXT, content);
         cv.put(JournalContract.JournalEntry.COLUMN_DATE, selectedDate);
+        cv.put(JournalContract.JournalEntry.COLUMN_TIMESTAMP, dateSort);
 
         return mDatabase.insert(JournalContract.JournalEntry.TABLE_NAME, null, cv);
     }
