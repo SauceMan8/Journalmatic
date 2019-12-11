@@ -6,16 +6,19 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.location.LocationManagerCompat;
 
 import com.android.volley.Request;
@@ -38,7 +41,10 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -72,7 +78,7 @@ public class AutoEntry {
     }
 
 
-    public WeatherResult getWeather(String lat, String lon, String units){
+    public WeatherResult getWeather(String lat, String lon, String units) {
         WeatherResult result = null;
         String url = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat
                 + "&lon=" + lon
@@ -114,6 +120,10 @@ public class AutoEntry {
     }
 
     private void getWeather() {
+        if (!Common.defaultPreferences.getBoolean("LocationEnabled", false) || !Common.defaultPreferences.getBoolean("weather", false)) {
+            getCalendar("");
+            return;
+        }
         compositeDisposable = new CompositeDisposable();
         Retrofit retrofit = RetrofitClient.getInstance();
         weatherMap = retrofit.create(IOpenWeatherMap.class);
@@ -123,10 +133,16 @@ public class AutoEntry {
                 .subscribe(new Consumer<WeatherResult>() {
                     @Override
                     public void accept(WeatherResult weatherResult) throws Exception {
-                        String message = "The weather today in " + weatherResult.getName()
-                                + " consisted of " + weatherResult.getWeatherFirst().getDescription()
-                                + " and was " + weatherResult.getMain().getTemp() + " degrees Fahrenheit";
-                        addEntry(message);
+
+                        String weather_1 = Common.defaultPreferences.getString("weather_1", "The weather today in");
+                        String weather_2 = Common.defaultPreferences.getString("weather_2", "consisted of");
+                        String weather_3 = Common.defaultPreferences.getString("weather_3", "and was");
+
+                        String message = weather_1 + " " + weatherResult.getName()
+                                + " " + weather_2  + " " + weatherResult.getWeatherFirst().getDescription()
+                                + " " + weather_3 + " " + weatherResult.getMain().getTemp() + " degrees Fahrenheit";
+                        getCalendar(message);
+                        //addEntry(message);
                     }
                 }, new Consumer<Throwable>() {
                     @Override
@@ -137,8 +153,94 @@ public class AutoEntry {
 //        Toast.makeText(appContext, weatherResult.getName(), Toast.LENGTH_LONG).show();
     }
 
+    private void getCalendar(String string) {
+        if (appContext.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED || !Common.defaultPreferences.getBoolean("calendar", false)) {
+            // TO.DO: Consider calling
+            //    Activity#requestPermissions
+            if (!string.isEmpty()) {
+                addEntry(string);
+            }
+            return;
+        }
 
-    public void addEntry() {addEntry("This is an auto Generated entry");}
+        String message = "";
+
+
+        if (!string.isEmpty()) {
+            message += string + "\n\n\n\n";
+        }
+        String calendar_1 = Common.defaultPreferences.getString("calendar_1", "My Events Today consisted of:");
+        String calendar_2 = Common.defaultPreferences.getString("calendar_2", "located at:");
+
+        message += calendar_1 + " " + "\n";
+
+        String[] selection = new String [] {CalendarContract.Events.TITLE,
+                                CalendarContract.Events.EVENT_LOCATION,
+                                CalendarContract.Events.DESCRIPTION,
+                                CalendarContract.Events.DTSTART,
+                                CalendarContract.Events.DTEND};
+
+        Cursor cursor = appContext.getContentResolver().query(CalendarContract.Events.CONTENT_URI, selection, null, null, CalendarContract.Events.DTSTART + " ASC", null);
+
+        while (cursor.moveToNext()) {
+            if (cursor!=null) {
+                int title_id = cursor.getColumnIndex(CalendarContract.Events.TITLE);
+                int desc_id = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION);
+                int loc_id = cursor.getColumnIndex(CalendarContract.Events.EVENT_LOCATION);
+                int date_id = cursor.getColumnIndex(CalendarContract.Events.DTSTART);
+                int dateEnd_id = cursor.getColumnIndex(CalendarContract.Events.DTEND);
+
+                String titleValue = cursor.getString(title_id);
+                String descValue = cursor.getString(desc_id);
+                String locValue = cursor.getString(loc_id);
+                String dateValue = cursor.getString(date_id);
+                String dateEndValue = cursor.getString(dateEnd_id);
+
+                DateFormat dateTimeFormat = new SimpleDateFormat("hh:mm a", Locale.US);
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(Long.valueOf(dateValue));
+
+                String timeEnd = "";
+                if (dateEndValue != null) {
+                    Calendar calendarTimeEnd = Calendar.getInstance();
+                    calendarTimeEnd.setTimeInMillis(Long.valueOf(dateEndValue));
+                    timeEnd = dateTimeFormat.format(calendarTimeEnd.getTime());
+                }
+
+
+                long mDate = Long.valueOf(dateValue);
+                long reminder_time = System.currentTimeMillis() - (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) * 1000 * 60 * 60);
+                long reminder_time2 = System.currentTimeMillis() + ((24-Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) * 1000 * 60 * 60);
+
+                String temp = "";
+                if (reminder_time2 >= mDate && reminder_time <= mDate) {
+
+                    if (!titleValue.isEmpty()) {
+                        message += titleValue + "\n";
+                    }
+                    if (!descValue.isEmpty()) {
+                        temp += descValue + "\n";
+                    }
+                    if (!locValue.isEmpty()) {
+                        temp += "\n" + calendar_2 + "\n" + locValue + "\n";
+                    }
+                    if (!dateValue.isEmpty()) {
+                        temp += "\t\nAt " + dateTimeFormat.format(calendar.getTime());
+                    }
+                    if (!dateEndValue.isEmpty()) {
+                        temp += " to " + timeEnd;
+                    }
+
+                    message += temp.replaceAll("(?m)^", "\t\t") +"\n\n";
+                }
+
+
+
+            }
+        }
+        addEntry(message);
+    }
+
     public void addEntry(String content) {
 
         ContentValues cv = new ContentValues();
@@ -152,6 +254,9 @@ public class AutoEntry {
     }
 
     public void getLastLocation() {
+        if (!Common.defaultPreferences.getBoolean("LocationEnabled", false)) {
+            return;
+        }
         // Get last known recent location using new Google Play Services SDK (v11+)
         FusedLocationProviderClient locationClient = getFusedLocationProviderClient(appContext);
 

@@ -19,13 +19,16 @@
 
     <PreferenceCategory app:title="@string/notifications">
         <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="auto_create"
+            app:title="@string/autoCreate_settings_title" />
+
+        <SwitchPreferenceCompat
             app:key="notify"
             app:title="@string/notifications"
             app:defaultValue="true"/>
 
-
         <ListPreference
-            app:dependency="notify"
             app:defaultValue="@string/pref_feq_def_value"
             app:entries="@array/pref_feq_entries"
             app:entryValues="@array/pref_feq_values"
@@ -34,37 +37,82 @@
             app:title="@string/notificationsFreq" />
 
         <EditTextPreference
-            android:defaultValue="hello settings!"
+            android:defaultValue="20"
             android:key="reminder_time"
             android:selectAllOnFocus="true"
             android:singleLine="true"
-            android:title="Set Reminder Hour"/>
+            android:title="Set Reminder Hour"
+            app:summary="@string/set_in_24" />
+
 
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/weather_connection_text"
+        android:summary="Do not add spaces before or after">
 
-
-    <SwitchPreferenceCompat
-        app:key="auto_create"
-        app:title="@string/autoCreate_settings_title"
-        app:defaultValue="true"/>
-
-    <ListPreference
-        app:dependency="auto_create"
-        app:defaultValue="@string/pref_feq_def_value"
-        app:entries="@array/pref_feq_entries"
-        app:entryValues="@array/pref_feq_values"
-        app:key="creation_time"
-        app:summary="@string/creationFreq_descr"
-        app:title="@string/creationFreq" />
-
-
-    <PreferenceCategory app:title="Appearance">
         <SwitchPreferenceCompat
-            app:key="dark"
-            app:title="@string/darkmode"
-            app:defaultValue="false"/>
+            app:key="weather"
+            app:title="Use Weather for Auto Generate"
+            app:defaultValue="true"/>
+
+        <EditTextPreference
+            android:dependency="weather"
+            android:defaultValue="The weather today in"
+            android:key="weather_1"
+            android:title="______ [Name of city]"/>
+
+        <EditTextPreference
+            android:dependency="weather"
+            android:defaultValue="consisted of"
+            android:key="weather_2"
+            android:title="______ [Weather Description]"/>
+
+        <EditTextPreference
+            android:dependency="weather"
+            android:defaultValue="and was"
+            android:key="weather_3"
+            android:title="______ [Temperature]"/>
 
     </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/calendar_connection_text"
+        android:summary="Do not add spaces before or after">
+
+        <SwitchPreferenceCompat
+            app:key="calendar"
+            app:title="Use Calendar for Auto Generate"
+            app:defaultValue="true"/>
+
+        <EditTextPreference
+            android:dependency="calendar"
+            android:defaultValue="My Events Today consisted of:"
+            android:key="calendar_1"
+            android:title="______ [new line then list of events]"/>
+
+        <EditTextPreference
+            android:dependency="calendar"
+            android:defaultValue="located at:"
+            android:key="calendar_2"
+            android:title="______ [new line then events location]"/>
+
+    </PreferenceCategory>
+
+<!--    <ListPreference-->
+<!--        app:dependency="auto_create"-->
+<!--        app:defaultValue="@string/pref_feq_def_value"-->
+<!--        app:entries="@array/pref_feq_entries"-->
+<!--        app:entryValues="@array/pref_feq_values"-->
+<!--        app:key="creation_time"-->
+<!--        app:summary="@string/creationFreq_descr"-->
+<!--        app:title="@string/creationFreq" />-->
+
+
+<!--    <PreferenceCategory app:title="Appearance">-->
+<!--        <SwitchPreferenceCompat-->
+<!--            app:key="dark"-->
+<!--            app:title="@string/darkmode"-->
+<!--            app:defaultValue="false"/>-->
+
+<!--    </PreferenceCategory>-->
 
 </PreferenceScreen>

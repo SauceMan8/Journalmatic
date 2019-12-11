@@ -82,8 +82,8 @@ public class Journalmatic extends Application {
 
         am.setInexactRepeating(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                SystemClock.elapsedRealtime() + (10*1000), //calendar.getTimeInMillis(),
-                AlarmManager.INTERVAL_FIFTEEN_MINUTES,
+                calendar.getTimeInMillis(),
+                AlarmManager.INTERVAL_DAY,
                 pendingIntent);
 
     }

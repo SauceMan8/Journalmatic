@@ -2,12 +2,14 @@ package com.sawyergehring.journalmatic;
 
 import android.Manifest;
 import android.app.AlarmManager;
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -15,6 +17,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
@@ -23,13 +26,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CalendarView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
@@ -44,11 +47,11 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.SettingsClient;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.sawyergehring.journalmatic.Common.Common;
+
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -58,6 +61,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
+import static com.sawyergehring.journalmatic.Journalmatic.Reminder_Channel;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -89,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
 
         DBOpenHelper dbHelper = new DBOpenHelper(this);
         mDatabase = dbHelper.getWritableDatabase();
+        Common.mDatabase = dbHelper.getWritableDatabase();
 
         getPermissionToReadLocation();
         getPermissionToReadCalendar();
@@ -110,8 +115,6 @@ public class MainActivity extends AppCompatActivity {
         am = (AlarmManager) this.getSystemService(ALARM_SERVICE);
 
         //setupNotification();
-        TextView t = findViewById(R.id.textView);
-        t.setText(Common.defaultPreferences.getString("reminder_time", "broken"));
 
 //        insertSampleData();
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -126,8 +129,10 @@ public class MainActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                sendReminderNotification();
                 AutoEntry autoEntry = new AutoEntry(MainActivity.this);
                 autoEntry.generate();
+
             }
         });
 
@@ -160,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
         LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
     }
+
 
     @Override
     protected void onStart() {
@@ -355,7 +361,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     private void setupNotification() {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 23);
@@ -422,13 +427,16 @@ public class MainActivity extends AppCompatActivity {
                 insertSampleData();
                 break;
             case R.id.action_delete_all:
-                Toast.makeText(this, "Delete", Toast.LENGTH_SHORT).show();
+                deleteAllEntries();
                 break;
             case R.id.action_settings:
                 startActivity(new Intent(this, SettingsActivity.class));
                 break;
-                default:
-                    return super.onOptionsItemSelected(item);
+            case R.id.actions_export:
+                startActivity(new Intent(this, SaveJournalInRange.class));
+                break;
+            default:
+                return super.onOptionsItemSelected(item);
         }
         return true;
     }
@@ -485,6 +493,31 @@ public class MainActivity extends AppCompatActivity {
         mAdapter.swapCursor(getItemsByDate(selectedDate));
     }
 
+    private void deleteAllEntries() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure you want to delete this entry?")
+                .setCancelable(true)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mDatabase.delete(JournalContract.JournalEntry.TABLE_NAME, "datetime=?" , new String[]{selectedDate});
+
+                        Toast.makeText(MainActivity.this, "Today's entries deleted", Toast.LENGTH_SHORT).show();
+                        mAdapter.swapCursor(getItemsByDate(selectedDate));
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
+    }
+
 //    public void createAlarm() {
 //        Intent intent = new Intent(this, NotificationReceiver.class);
 //
@@ -498,23 +531,23 @@ public class MainActivity extends AppCompatActivity {
 //
 //    }
 
-//    public void sendReminderNotification() {
-//
-//        Intent notificationIntent = new Intent(this, EditorActivity.class);
-//        notificationIntent.putExtra("selectedDate", getTodayDateAsString());
-//        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-//
-//        Notification notification = new NotificationCompat.Builder(this, Reminder_Channel)
-//                .setSmallIcon(R.drawable.ic_main_icon_foreground)
-//                .setContentTitle("Journal Reminder")
-//                .setContentText("Reminder to write in your journal today!")
-//                .setPriority(NotificationCompat.PRIORITY_LOW)
-//                .setContentIntent(contentIntent)
-//                .setAutoCancel(true)
-//                .build();
-//
-//        notificationManager.notify(1, notification);
-//    }
+    public void sendReminderNotification() {
+
+        Intent notificationIntent = new Intent(this, EditorActivity.class);
+        notificationIntent.putExtra("selectedDate", getTodayDateAsString());
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        Notification notification = new NotificationCompat.Builder(this, Reminder_Channel)
+                .setSmallIcon(R.drawable.ic_main_icon_foreground)
+                .setContentTitle("Journal Reminder")
+                .setContentText("Reminder to write in your journal today!")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .build();
+
+        notificationManager.notify(1, notification);
+    }
 //
 //    public void sendErrorNotification(View v) {
 //        Notification notification = new NotificationCompat.Builder(this, Reminder_Channel)

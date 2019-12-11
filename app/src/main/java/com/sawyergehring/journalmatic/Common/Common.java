@@ -2,6 +2,7 @@ package com.sawyergehring.journalmatic.Common;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 
 import com.android.volley.Request;
@@ -24,6 +25,8 @@ public class Common {
     public static Location current_location = null;
     public static final int GET_LOCATION_PERMISSIONS_REQUEST = 1;
     public static final int GET_CALENDAR_PERMISSIONS_REQUEST = 2;
+    public static final int GET_STORAGE_PERMISSIONS_REQUEST = 3;
     public static SharedPreferences defaultPreferences;// Identifier for the permission request
+    public static SQLiteDatabase mDatabase;
 
 }

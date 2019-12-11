@@ -12,7 +12,13 @@
     <item
         android:id="@+id/action_delete_all"
         android:orderInCategory="101"
-        android:title="@string/delete_all_entry"
+        android:title="@string/delete_today_entries"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/actions_export"
+        android:orderInCategory="102"
+        android:title="@string/export"
         app:showAsAction="never" />
 
     <item

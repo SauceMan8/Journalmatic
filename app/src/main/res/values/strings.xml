@@ -23,23 +23,18 @@
     <string name="reply_title">Default reply action</string>
 
     <!-- Sync Preferences -->
-    <string name="sync_title">Sync email periodically</string>
-    <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
-    <string name="attachment_summary_off">Only download attachments when manually requested</string>
-    <string name="notificationsFreq">Notification Frequency</string>
+    <string name="notificationsFreq">Event Frequency</string>
     <string name="darkmode">Dark Mode</string>
-    <string name="notificationFreq_descr">Change how often you get notified to write in your journal.</string>
-    <string name="creationFreq">Automatic Entry Frequency</string>
+    <string name="notificationFreq_descr">Change how often selected events occur</string>
+    <string name="creationFreq">Selected Events Frequency</string>
     <string name="creationFreq_descr">Change how often an entry is created</string>
 
-    <string name="pref_feq_def_value">daily</string>
+    <string name="pref_feq_def_value">Daily</string>
 
     <string-array name="pref_feq_entries">
-        <item>Daily</item>
-        <item>Weekly</item>
-        <item>Monthly</item>
+        <item value="1">Daily</item>
+        <item value="2">Weekly</item>
+        <item value="3">Monthly</item>
     </string-array>
 
     <string-array name="pref_feq_values">
@@ -50,4 +45,19 @@
     <string name="title_activity_settings2">Settings</string>
     <string name="notifications">Notifications</string>
     <string name="autoCreate_settings_title">Auto Generate Journal Entries</string>
+    <string name="delete_today_entries">Delete today\'s entries</string>
+    <string name="set_in_24">Set hour in 24hr time</string>
+    <string name="weather_connection_text">Automated Weather Connection Text</string>
+    <string name="calendar_connection_text">Automated Calendar Connection Text</string>
+    <string name="export">Export</string>
+    <string name="year">Year</string>
+    <string name="day">Day</string>
+    <string name="name">Name</string>
+    <string name="file_name">File Name</string>
+    <string name="starting_date">Starting Date</string>
+    <string name="ending_date">Ending date</string>
+    <string name="month">Month</string>
+    <string name="leave_blank">Leave any date blank to get everything</string>
+    <string name="test_notification_and_generate">Test Notification and Generate</string>
+    <string name="test">Test</string>
 </resources>
