@@ -21,7 +21,7 @@ import java.io.IOException;
 
 public class Common {
 
-    public static final String WEATHER_API_KEY = "c2f533c20113f7abe00b353a5f1331fb";
+    public static final String WEATHER_API_KEY = "";
     public static Location current_location = null;
     public static final int GET_LOCATION_PERMISSIONS_REQUEST = 1;
     public static final int GET_CALENDAR_PERMISSIONS_REQUEST = 2;
